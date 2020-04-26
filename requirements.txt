@@ -1,0 +1,10 @@
+altair
+altair_data_server
+vega_datasets
+pandas
+numpy
+scipy
+tqdm
+seaborn
+matplotlib
+ipywidgets
