@@ -1,3 +1,4 @@
+
 def compute_mu_pi_2(y_pred):
     pop_pred = np.stack([y_pred['hosp'], y_pred['critical'], y_pred['deceased']]).T
     mu = np.mean(pop_pred, 1)

@@ -96,17 +96,17 @@ def model(seirhcd_int, N, pop_country, y=None, compartments='d', nb_mobilities=1
         
         numpyro.sample('y', target_dist, obs=y)
 
-def multi_model(mobility, populations_country, observations=None):
-    nb_mobilities = mobility[0].shape[1]
+def multi_model(all_mobilities, all_populations, observations=None):
+    nb_mobilities = all_mobilities[0].shape[1]
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
     psi = numpyro.sample('psi', dist.TruncatedNormal(scale=5.))
 
-    for country in range(len(mobility)):
-        mobility_data = mobility[country]
+    for country in range(len(all_mobilities)):
+        mobility_data = all_mobilities[country]
         seirhcd_int = build_my_odeint(mobility_data)
-        pop_country = populations_country[country]
+        pop_country = all_populations[country]
         if observations is not None:
-            y = np.asarray(observations[country])
+            y = observations[country]
         else:
             y = None
             
