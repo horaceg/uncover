@@ -1,6 +1,6 @@
 
-def run_sim_samples(integrator, samples):
-    ts = np.arange(float(data.shape[0]))
+def run_sim_samples(integrator, samples, N, pop_country):
+    ts = np.arange(float(N))
     res = []
     for i in range(samples['c_a'].shape[0]):
         post_params = dict()
@@ -12,7 +12,7 @@ def run_sim_samples(integrator, samples):
         i_init /= pop_country
         z_init = np.array([1. - i_init, 0., i_init, 0., 0., 0., 0.])
         args = list(post_params.values())[:-1]
-        
+
         alpha = post_params['alpha']
         alpha /= np.sum(alpha)
         
@@ -22,22 +22,23 @@ def run_sim_samples(integrator, samples):
     res = np.stack(res)
     return res
 
-def plot_compartment(pred_data, true_data):
+def plot_compartment(pred_data, true_data, pop_country, times):
     pi = np.percentile(pred_data, (10., 90.), 0)
     
-    plt.plot(times, np.mean(pred_data, axis=0) * pop_country, label='pred')
-    plt.plot(times, true_data, label='true')
-    plt.fill_between(times, pi[0, :] * pop_country, pi[1, :] * pop_country, interpolate=True, alpha=0.3)
+    plt.plot(onp.asarray(times), np.mean(pred_data, axis=0) * pop_country, label='pred')
+#     plt.plot(times, true_data, label='true')
+    plt.fill_between(onp.asarray(times), pi[0, :] * pop_country, pi[1, :] * pop_country, interpolate=True, alpha=0.3)
     plt.legend()
 
-def plot_hcd(res, hosp_indexed):
-    for i, name in enumerate(['dc', 'rea', 'hosp'], start=1):
+def plot_hcd(res, pop_country, times, title=None):
+    for i, name in enumerate(['hospitalized', 'critical', 'deceased' ], start=5):
         plt.subplots()
-        plot_compartment(res[:, :, -i], hosp_indexed[name].to_numpy())
-        plt.title(name)
+#         plot_compartment(res[:, :, -i], hosp_indexed[name].to_numpy(), pop_country)
+        plot_compartment(res[:, :, i], np.zeros(res.shape[1]), pop_country, times)
+        plt.title(name + ' - ' + title)
     
-def plot_seir(res):
+def plot_seir(res, pop_country, times, title=None):
     for i, name in enumerate(['susceptible', 'exposed', 'infected', 'recovered']):
         plt.subplots()
-        plot_compartment(res[:, :, i], np.zeros(res.shape[1]))
-        plt.title(name)
+        plot_compartment(res[:, :, i], np.zeros(res.shape[1]), pop_country, times)
+        plt.title(name + ' - ' + title)

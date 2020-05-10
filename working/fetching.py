@@ -2,9 +2,6 @@ from io import StringIO
 import re
 import requests
 
-import pandas as pd
-import numpy as np
-
 # country codes
 def fetch_isocodes():
     isocodes = pd.read_csv('../input/countries-iso-codes/wikipedia-iso-country-codes.csv')
@@ -14,11 +11,12 @@ def fetch_isocodes():
 
 # ACAPS
 def fetch_acaps(isocodes, url=None):
-    if url is not None:
-        measures = pd.read_excel(url, sheet_name='Database')
-        measures.to_csv('acaps.csv', index=False)
+    filepath = '../input/acaps-covid19-government-measures/acaps_covid19_goverment_measures_dataset.xlsx'
+#     if url is not None:
+#         measures = pd.read_excel(url, sheet_name='Database')
+#         measures.to_csv(filepath, index=False)
     
-    measures = pd.read_csv('acaps.csv')
+    measures = pd.read_excel(filepath, sheet_name='Database')
     measures.columns = measures.columns.str.lower()
     measures['date_implemented'] = pd.to_datetime(measures['date_implemented'])
 
@@ -36,12 +34,13 @@ def fetch_ecdc():
 # Apple mobility
 
 def fetch_apple(location_code, url=None):
+    filepath = '../input/apple-covid-mobility/applemobilitytrends.csv'
     if url is not None:
         response = requests.get(url)
         apple_mobility = (pd.read_csv(StringIO(response.content.decode())))
-        apple_mobility.to_csv('apple.csv', index=False)
+        apple_mobility.to_csv(filepath, index=False)
 
-    apple_mobility = (pd.read_csv('apple.csv')
+    apple_mobility = (pd.read_csv(filepath)
                       .drop('alternative_name', axis=1)
                       .set_index(['geo_type', 'region', 'transportation_type'])
                       .rename_axis("date", axis=1)

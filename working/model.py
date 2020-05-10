@@ -22,19 +22,7 @@ def make_target_dist(psi_h, psi_c, psi,
     reloc_target_dist = dist.TransformedDistribution(target_dist, [reloc])
     return reloc_target_dist
 
-def sample_compartment_init(pop_country, country_name=None):
-#     tau = numpyro.sample('tau', dist.Exponential(0.03))
-#     kappa_i0 = numpyro.sample('kappa_i0', dist.TruncatedNormal(0, 0., 0.5))
-    i_init = numpyro.sample(f'i_init_{country_name}', 
-                            dist.TruncatedNormal(loc=50., scale=10.)
-#                             dist.Gamma(*reparametrize_gamma(50, 10.))
-#                             dist.Exponential(1. / tau)
-                           )
-    i_init /= pop_country
-    z_init = np.array([1. - i_init, 0., i_init, 0., 0., 0., 0.])
-    return z_init
-    
-def sample_parameters(nb_mobilities=1):
+def sample_parameters(nb_mobilities):
     kappa0 = numpyro.sample('kappa0', dist.TruncatedNormal(0, 0., 0.5))
     kappa1 = numpyro.sample('kappa1', dist.TruncatedNormal(0, 0, 0.5))
     r0 = numpyro.sample('r0', dist.TruncatedNormal(0, PRIOR_MEANS.r0, kappa0))
@@ -61,6 +49,18 @@ def sample_parameters(nb_mobilities=1):
     return params, alpha
     
 
+def sample_compartment_init(pop_country, country_name=None):
+#     tau = numpyro.sample('tau', dist.Exponential(0.03))
+#     kappa_i0 = numpyro.sample('kappa_i0', dist.TruncatedNormal(0, 0., 0.5))
+    i_init = numpyro.sample(f'i_init_{country_name}', 
+                            dist.TruncatedNormal(loc=50., scale=10.)
+#                             dist.Gamma(*reparametrize_gamma(50, 10.))
+#                             dist.Exponential(1. / tau)
+                           )
+    i_init /= pop_country
+    z_init = np.array([1. - i_init, 0., i_init, 0., 0., 0., 0.])
+    return z_init
+    
 def model(seirhcd_int, N, pop_country, y=None, compartments='d', nb_mobilities=1):
     ts = np.arange(float(N))
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
@@ -100,7 +100,7 @@ def multi_model(all_mobilities, all_populations, observations=None):
     nb_mobilities = all_mobilities[0].shape[1]
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
     psi = numpyro.sample('psi', dist.TruncatedNormal(scale=5.))
-
+    i_init = numpyro.sample('i_init', dist.TruncatedNormal(loc=50, scale=10))
     for country in range(len(all_mobilities)):
         mobility_data = all_mobilities[country]
         seirhcd_int = build_my_odeint(mobility_data)
@@ -112,7 +112,7 @@ def multi_model(all_mobilities, all_populations, observations=None):
             
         ts = np.arange(float(mobility_data.shape[0]))
 
-        z_init = sample_compartment_init(pop_country, country)
+        z_init = np.array([1. - i_init / pop_country, 0., i_init / pop_country, 0., 0., 0., 0.])
         z = seirhcd_int(z_init, ts, *params, *alpha)
 
         daily_deaths = diff_pop(z[:, -1], pop_country)
