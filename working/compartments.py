@@ -1,5 +1,5 @@
 
-def run_sim_samples(integrator, samples, N, pop_country):
+def run_sim_samples(integrator, samples, N, pop_country, country_ix):
     ts = np.arange(float(N))
     res = []
     for i in range(samples['c_a'].shape[0]):
@@ -12,11 +12,13 @@ def run_sim_samples(integrator, samples, N, pop_country):
         i_init /= pop_country
         z_init = np.array([1. - i_init, 0., i_init, 0., 0., 0., 0.])
         args = list(post_params.values())[:-1]
+        
+        gamma = samples.get(f'gamma_{i}', np.ones(samples['c_a'].shape[0]))[i]
 
         alpha = post_params['alpha']
         alpha /= np.sum(alpha)
         
-        sim_res = integrator(z_init, ts, *args, *alpha)
+        sim_res = integrator(z_init, ts, *args, gamma, *alpha)
         res.append(sim_res)
 
     res = np.stack(res)

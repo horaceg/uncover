@@ -2,7 +2,7 @@ def build_my_odeint(mobility_data, rtol=1e-5, atol=1e-9, mxstep=500):
     """
     code based on jax.experimental.ode.build_ode to make it work with mobility data
     """
-    def dz_dt(z, t, r0, r1, t_inc, t_inf, t_hosp, t_crit, m_a, c_a, f_a, *alpha):
+    def dz_dt(z, t, r0, r1, t_inc, t_inf, t_hosp, t_crit, m_a, c_a, f_a, gamma, *alpha):
         s = z[0]
         e = z[1]
         i = z[2]
@@ -12,9 +12,8 @@ def build_my_odeint(mobility_data, rtol=1e-5, atol=1e-9, mxstep=500):
         
         alpha_ = np.array(alpha)
         int_t = np.array([t]).astype(int)[0]
-        rt_u = r0 * (1 + mobility_data[int_t]) - r1 * mobility_data[int_t]
+        rt_u = gamma * r0 * mobility_data[int_t] + r1 * (1 - gamma * mobility_data[int_t])
         rt = np.dot(rt_u, alpha_)
-#         rt = alpha0 * rt_u[0] + alpha1 * rt_u[1]
         
         ds = - (rt / t_inf) * i * s
         de = (rt / t_inf) * i * s - (e / t_inc)

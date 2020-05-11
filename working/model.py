@@ -27,7 +27,7 @@ def sample_parameters(nb_mobilities):
     kappa1 = numpyro.sample('kappa1', dist.TruncatedNormal(0, 0, 0.5))
     r0 = numpyro.sample('r0', dist.TruncatedNormal(0, PRIOR_MEANS.r0, kappa0))
     r1 = numpyro.sample('r1', dist.TruncatedNormal(0, PRIOR_MEANS.r1, kappa1))
-
+    
     alpha = numpyro.sample('alpha', dist.Gamma(*reparametrize_gamma(1., 0.5)), sample_shape=(nb_mobilities,))
     alpha /= np.sum(alpha)
     
@@ -65,8 +65,9 @@ def model(seirhcd_int, N, pop_country, y=None, compartments='d', nb_mobilities=1
     ts = np.arange(float(N))
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
     z_init = sample_compartment_init(pop_country)
-    
-    z = seirhcd_int(z_init, ts, *params, *alpha)
+    gamma = numpyro.sample('gamma', dist.TruncatedNormal(0, 1, 0.1))
+    z = seirhcd_int(z_init, ts, *params, gamma, *alpha)
+#     z = seirhcd_int(z_init, ts, *params, *alpha)
     
     daily_deaths = diff_pop(z[:, -1], pop_country)
     psi = numpyro.sample('psi', dist.TruncatedNormal(scale=5.))
@@ -101,6 +102,7 @@ def multi_model(all_mobilities, all_populations, observations=None):
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
     psi = numpyro.sample('psi', dist.TruncatedNormal(scale=5.))
     i_init = numpyro.sample('i_init', dist.TruncatedNormal(loc=50, scale=10))
+#     i_init = numpyro.sample('i_init')
     for country in range(len(all_mobilities)):
         mobility_data = all_mobilities[country]
         seirhcd_int = build_my_odeint(mobility_data)
@@ -113,7 +115,11 @@ def multi_model(all_mobilities, all_populations, observations=None):
         ts = np.arange(float(mobility_data.shape[0]))
 
         z_init = np.array([1. - i_init / pop_country, 0., i_init / pop_country, 0., 0., 0., 0.])
-        z = seirhcd_int(z_init, ts, *params, *alpha)
+        
+#         sample_size_gamma = numpyro.sample(f'sample_size_gamma_{country}')
+        gamma = numpyro.sample(f'gamma_{country}', dist.TruncatedNormal(0, 1, 0.1))
+        z = seirhcd_int(z_init, ts, *params, gamma, *alpha)
+#         z = seirhcd_int(z_init, ts, *params, *alpha)
 
         daily_deaths = diff_pop(z[:, -1], pop_country)
 

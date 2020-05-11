@@ -2,9 +2,9 @@
 ix = pd.IndexSlice
 
 mobility_categories = [
-    'grocery_and_pharmacy',
-#         'transit', 'walking', 'driving', 
-    'retail_and_recreation', 'workplaces', 'transit_stations']
+#     'transit', 'walking', 'driving', 
+    'grocery_and_pharmacy', 'retail_and_recreation', 'workplaces', 'transit_stations'
+]
 
 def diff_pop(cumulative, pop_country):
     daily = np.hstack((np.array([0.]), np.diff(cumulative * pop_country)))
