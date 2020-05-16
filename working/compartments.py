@@ -2,24 +2,25 @@
 def run_sim_samples(integrator, samples, N, pop_country):
     ts = np.arange(float(N))
     res = []
-    for i in range(samples['c_a'].shape[0]):
-        post_params = dict()
-        for param in 'r0, r1, t_inc, t_inf, t_hosp, t_crit, m_a, c_a, f_a, alpha'.split(', '):
-            post_params[param] = samples[param][i]
-    #         post_params[param] = inference_data.posterior[param].values[0, -1]
+    corr_samples = {**samples, 
+                    **{'alpha': samples['alpha'] / samples['alpha'].sum(axis=1)[:, np.newaxis]},
+                    **{'i_init': samples['i_init'] / pop_country}
+                   }
+    nb_samples = corr_samples['r0'].shape[0]
+    z_init = np.array([1. - corr_samples['i_init'], 
+                       np.zeros(nb_samples), 
+                       corr_samples['i_init'], 
+                       np.zeros(nb_samples), 
+                       np.zeros(nb_samples), 
+                       np.zeros(nb_samples), 
+                       np.zeros(nb_samples)
+                      ]).T
 
-        i_init = samples['i_init'][i]
-        i_init /= pop_country
-        z_init = np.array([1. - i_init, 0., i_init, 0., 0., 0., 0.])
-        args = list(post_params.values())[:-1]
-
-        alpha = post_params['alpha']
-        alpha /= np.sum(alpha)
-        
-        sim_res = integrator(z_init, ts, *args, *alpha)
-        res.append(sim_res)
-
-    res = np.stack(res)
+    arg_names = 'r0, r1, t_inc, t_inf, t_hosp, t_crit, m_a, c_a, f_a'.split(', ')
+    args = (corr_samples[name] for name in arg_names)
+    alpha = corr_samples['alpha']
+    res = vmap(integrator)(z_init, np.repeat(ts[np.newaxis, :], nb_samples, axis=0), *args, *[alpha[:, i] for i in range(alpha.shape[1])])
+    
     return res
 
 def plot_compartment(pred_data, true_data, pop_country, times):
