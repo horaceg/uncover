@@ -96,20 +96,24 @@ def model(seirhcd_int, N, pop_country, y=None, compartments='d', nb_mobilities=1
         
         numpyro.sample('y', target_dist, obs=y)
 
+
 def multi_model(all_mobilities, all_populations, observations=None):
     nb_mobilities = all_mobilities[0].shape[1]
     params, alpha = sample_parameters(nb_mobilities=nb_mobilities)
     psi = numpyro.sample('psi', dist.TruncatedNormal(scale=5.))
     i_init = numpyro.sample('i_init', dist.TruncatedNormal(loc=50, scale=10))
+    
     for country in range(len(all_mobilities)):
         mobility_data = all_mobilities[country]
-        seirhcd_int = build_my_odeint(mobility_data)
         pop_country = all_populations[country]
+        seirhcd_int = build_my_odeint(mobility_data, 
+#                                       atol= 1. / pop_country
+                                     )
         if observations is not None:
             y = observations[country]
         else:
             y = None
-            
+
         ts = np.arange(float(mobility_data.shape[0]))
 
         z_init = np.array([1. - i_init / pop_country, 0., i_init / pop_country, 0., 0., 0., 0.])
@@ -118,3 +122,6 @@ def multi_model(all_mobilities, all_populations, observations=None):
         daily_deaths = diff_pop(z[:, -1], pop_country)
 
         numpyro.sample(f'deceased_{country}', dist.GammaPoisson(psi, rate=psi / daily_deaths), obs=y)
+    
+#     vmap(sample_deceased)(np.arange(0, len(all_mobilities), step=1, dtype=int))
+#     jax.lax.fori_loop(0, len(all_mobilities), lambda i, val: sample_deceased(i), 0)
