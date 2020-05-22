@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 Params = namedtuple('Params', 
                     ['r0', 'r1', 
                      't_inc', 't_inf', 't_hosp', 't_crit', 
