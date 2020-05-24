@@ -1,7 +1,10 @@
 
 from jax import vmap, jit
+import jax.numpy as np
 
-def reorder(d, mask_train, mask_teset):
+from train_test_split import mask_ix
+
+def reorder(d, mask_train, mask_test):
     return mask_ix(d, mask_train) + mask_ix(d, mask_test)
 
 def compute_mu_pi_3(data):

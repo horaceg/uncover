@@ -1,3 +1,12 @@
+import numpyro
+import numpyro.distributions as dist
+import jax.numpy as np
+
+from reparameterizations import Gamma_2, Beta_2
+from prior_means import PRIOR_MEANS
+from preprocessing import diff_pop
+from ode import build_my_odeint
+
 
 def make_target_dist(psi_h, psi_c, psi, 
                      daily_hosp, daily_critical, daily_deaths, 
@@ -28,21 +37,21 @@ def sample_parameters(nb_mobilities):
     r0 = numpyro.sample('r0', dist.TruncatedNormal(0, PRIOR_MEANS.r0, kappa0))
     r1 = numpyro.sample('r1', dist.TruncatedNormal(0, PRIOR_MEANS.r1, kappa1))
 
-    alpha = numpyro.sample('alpha', dist.Gamma(*reparametrize_gamma(1., 0.5)), sample_shape=(nb_mobilities,))
+    alpha = numpyro.sample('alpha', Gamma_2(1., 0.5), sample_shape=(nb_mobilities,))
     alpha /= np.sum(alpha)
     
-    t_inc = numpyro.sample('t_inc', dist.Gamma(*reparametrize_gamma(PRIOR_MEANS.t_inc, .86)))
-    t_inf = numpyro.sample('t_inf', dist.Gamma(*reparametrize_gamma(PRIOR_MEANS.t_inf, 3.)))
-    t_hosp = numpyro.sample('t_hosp', dist.Gamma(*reparametrize_gamma(PRIOR_MEANS.t_hosp, 3.)))
-    t_crit = numpyro.sample('t_crit', dist.Gamma(*reparametrize_gamma(PRIOR_MEANS.t_crit, 3.)))
+    t_inc = numpyro.sample('t_inc', Gamma_2(PRIOR_MEANS.t_inc, .86))
+    t_inf = numpyro.sample('t_inf', Gamma_2(PRIOR_MEANS.t_inf, 3.))
+    t_hosp = numpyro.sample('t_hosp', Gamma_2(PRIOR_MEANS.t_hosp, 3.))
+    t_crit = numpyro.sample('t_crit', Gamma_2(PRIOR_MEANS.t_crit, 3.))
     
-    sample_size_m = numpyro.sample('sample_size_m', dist.Gamma(*reparametrize_gamma(7., 2)))
-    sample_size_c = numpyro.sample('sample_size_c', dist.Gamma(*reparametrize_gamma(7., 2)))
-    sample_size_f = numpyro.sample('sample_size_f', dist.Gamma(*reparametrize_gamma(7., 2)))
-    m_a = numpyro.sample('m_a', dist.Beta(*reparametrize_beta(PRIOR_MEANS.m_a, sample_size_m)))
+    sample_size_m = numpyro.sample('sample_size_m', Gamma_2(7., 2))
+    sample_size_c = numpyro.sample('sample_size_c', Gamma_2(7., 2))
+    sample_size_f = numpyro.sample('sample_size_f', Gamma_2(7., 2))
+    m_a = numpyro.sample('m_a', Beta_2(PRIOR_MEANS.m_a, sample_size_m))
 #     m_a = 0.8
-    c_a = numpyro.sample('c_a', dist.Beta(*reparametrize_beta(PRIOR_MEANS.c_a, sample_size_c)))
-    f_a = numpyro.sample('f_a', dist.Beta(*reparametrize_beta(PRIOR_MEANS.f_a, sample_size_f)))
+    c_a = numpyro.sample('c_a', Beta_2(PRIOR_MEANS.c_a, sample_size_c))
+    f_a = numpyro.sample('f_a', Beta_2(PRIOR_MEANS.f_a, sample_size_f))
     
     params = (r0, r1, t_inc, t_inf, t_hosp, t_crit, m_a, c_a, f_a)
     
@@ -54,7 +63,7 @@ def sample_compartment_init(pop_country, country_name=None):
 #     kappa_i0 = numpyro.sample('kappa_i0', dist.TruncatedNormal(0, 0., 0.5))
     i_init = numpyro.sample(f'i_init_{country_name}', 
                             dist.TruncatedNormal(loc=50., scale=10.)
-#                             dist.Gamma(*reparametrize_gamma(50, 10.))
+#                             Gamma_2(50, 10.))
 #                             dist.Exponential(1. / tau)
                            )
     i_init /= pop_country

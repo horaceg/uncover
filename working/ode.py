@@ -1,3 +1,7 @@
+import jax.numpy as np
+import jax
+from jax.experimental.ode import vjp_odeint, odeint
+
 def build_my_odeint(mobility_data, rtol=1e-5, atol=1e-9, mxstep=500):
     """
     code based on jax.experimental.ode.build_ode to make it work with mobility data
@@ -6,9 +10,10 @@ def build_my_odeint(mobility_data, rtol=1e-5, atol=1e-9, mxstep=500):
         s = z[0]
         e = z[1]
         i = z[2]
-        r = z[3]
+        # r = z[3]
         h = z[4]
         c = z[5]
+        # d = z[6]
         
         alpha_ = np.array(alpha)
         int_t = np.array([t]).astype(int)[0]

@@ -2,6 +2,9 @@ from io import StringIO
 import re
 import requests
 
+import jax.numpy as np
+import pandas as pd
+
 # country codes
 def fetch_isocodes():
     isocodes = pd.read_csv('../input/countries-iso-codes/wikipedia-iso-country-codes.csv')
@@ -110,3 +113,31 @@ def fetch_oxford():
                    .stack()
                    .rename('value'))
     return oxford_long
+
+def fetch_all():
+    isocodes = fetch_isocodes()
+    # acaps = fetch_acaps(isocodes)
+    ecdc = fetch_ecdc().set_index(['iso_code', 'date'])
+    location_code = ecdc.groupby(['location', 'iso_code']).first().iloc[:, 0].reset_index().iloc[:,:2]
+    apple = fetch_apple(location_code)
+    google = fetch_google(isocodes, location_code)
+    mobility = google.join(apple, how='outer')
+    populations_country = (ecdc.assign(population = lambda f: 
+                                    f['new_cases']
+                                    .div(f['new_cases_per_million'])
+                                    .mul(1_000_000))
+                        .groupby('iso_code')
+                        ['population']
+                        .last())
+
+    country_code_lookup = ecdc.reset_index()[['iso_code', 'location']].drop_duplicates().set_index('location').iloc[:, 0]
+    country_name_lookup = country_code_lookup.reset_index().set_index('iso_code').iloc[:, 0]
+
+    return {
+        "ecdc": ecdc,
+        "location_code": location_code, 
+        "mobility": mobility, 
+        "populations_country": populations_country, 
+        "country_code_lookup": country_code_lookup, 
+        "country_name_lookup": country_name_lookup
+        }

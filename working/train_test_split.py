@@ -16,5 +16,5 @@ def split_train_test(countries_train, countries_test, all_countries):
     mask_test = [c in countries_test for c in all_countries]
     return mask_train, mask_test
 
-list(indexslice([1, 2, 3], [0, 2]))
-mask_ix([1, 2, 3], [True, False, False]) ;
+# list(indexslice([1, 2, 3], [0, 2]))
+# mask_ix([1, 2, 3], [True, False, False]) ;
