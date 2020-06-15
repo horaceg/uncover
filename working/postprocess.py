@@ -1,3 +1,8 @@
+import jax.numpy as np
+import matplotlib.pyplot as plt
+import arviz as az
+from rt_mobility import reorder, compute_mu_pi_3, compute_rt_samples
+
 
 def compute_mu_pi_2(y_pred):
     pop_pred = np.stack([y_pred['hosp'], y_pred['critical'], y_pred['deceased']]).T
@@ -46,3 +51,21 @@ def plot_forest(inference_data):
     plt.grid()
     az.plot_forest(inference_data, var_names=['alpha'], figsize=(9, 4))
     plt.grid()
+
+def plot_results(y_pred, samples, all_countries, mask_train, mask_test, all_times, all_deaths, all_mobilities):
+    for i, country in enumerate(reorder(all_countries, mask_train, mask_test)):
+        mu, pi = compute_mu_pi(y_pred, f'deceased_{i}')
+        times = reorder(all_times, mask_train, mask_test)[i]
+        plot_daily_cumulated(mu, pi, reorder(all_deaths, mask_train, mask_test)[i], times, 
+                            f'deaths - {country}')
+        mobility_data = reorder(all_mobilities, mask_train, mask_test)[i]
+        rt_pi = compute_rt_samples(samples, mobility_data, times.shape[0])    
+        mu, pi = compute_mu_pi_3(rt_pi)
+        
+        fig, ax = plt.subplots(figsize=(8, 5))
+        plt.plot(times, mu)
+        plt.xticks(rotation=45)
+        plt.fill_between(times, pi[0], pi[1], alpha=0.3, interpolate=True)
+        plt.title(f'Rt - {country}')
+        
+        plt.tight_layout()

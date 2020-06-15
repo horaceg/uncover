@@ -8,3 +8,4 @@ tqdm
 seaborn
 matplotlib
 ipywidgets
+numpyro==0.2.4
